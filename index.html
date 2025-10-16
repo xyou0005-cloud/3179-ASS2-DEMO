@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Australian Tourism — Attractions & International Visitors (2025)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root{
+      --page-bg:#fafafa; --ink:#111; --muted:#555; --muted-2:#777;
+      --card-bg:#fff; --shadow:0 2px 10px rgba(0,0,0,.08);
+      --maxw: 1180px;
+    }
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--page-bg); color:var(--ink); -webkit-font-smoothing:antialiased;
+      display:flex; flex-direction:column; align-items:center;
+    }
+    .wrap{width:100%; max-width:var(--maxw); padding:28px 18px 48px; box-sizing:border-box}
+
+    header.hero{text-align:center; margin: 6px 0 24px;}
+    .kicker{
+      display:inline-block; font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+      color:var(--muted-2); background:#e9eefc; border-radius:999px; padding:6px 10px; margin-bottom:10px;
+    }
+    h1{font-size: clamp(26px, 4.2vw, 40px); line-height:1.15; margin: 6px 0 6px;}
+    .subtitle{color:var(--muted); font-size: clamp(15px, 2vw, 17px); margin:0 0 8px;}
+    .byline{color: var(--muted-2); font-size: 13px; margin-top:4px;}
+
+    section{margin: 22px 0 32px;}
+    h2{font-size: clamp(18px, 2.6vw, 24px); text-align:left; margin: 0 0 10px;}
+    .lead{ color:#666; margin: 6px 0 14px; text-align:left; }
+
+    .content{ display:flex; gap:28px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; }
+    .content > .half{ flex:1 1 520px; min-width:460px; }
+
+    .card{
+      background:var(--card-bg); border-radius: 12px; box-shadow: var(--shadow);
+      padding: 18px; box-sizing:border-box;
+      min-height: 480px;
+      display:flex; flex-direction:column; justify-content:flex-start;
+    }
+    #map, #vis, #vis-3, #bubble{width:100%; min-height:340px; flex-grow:1;}
+
+    .controls{
+      text-align:left; margin: 6px 0 14px; display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;
+    }
+    .checkboxes{ display:flex; gap:12px 18px; flex-wrap:wrap; max-width:100%; }
+    .checkboxes label{ font-size:14px; color:#333; display:flex; gap:6px; align-items:center; }
+
+    .caption{ color:var(--muted-2); font-size: 13px; margin-top: 8px; }
+    footer{text-align:center; color:#777; margin-top: 24px; font-size: 13px;}
+
+    @media (max-width: 980px){
+      .content{ flex-direction:column; }
+      .content > .half{ min-width:100%; }
+      .card{ min-height: 420px; }
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</head>
+<body>
+  <main class="wrap">
+
+    <!-- ===== Header ===== -->
+    <header class="hero">
+      <div class="kicker">Australian Tourism Insights Dashboard</div>
+      <h1>Australian Tourism: Attractions & International Visitor Patterns</h1>
+      <p class="subtitle">
+        Comparing where tourists go and how they spend across Australia’s states and territories in 2025.
+      </p>
+      <div class="byline">Author: <strong>XINHAO YOU</strong> · <span id="dateStamp"></span></div>
+    </header>
+
+    <!-- ===== Section 1: Map ===== -->
+    <section>
+      <h2>Distribution of Tourist Attractions in Australia</h2>
+      <p class="lead">
+        Dots represent attractions (coloured by category) drawn over state/territory boundaries.
+        Use the legend or filters on the map to focus on specific categories.
+      </p>
+      <div class="card">
+        <div id="map"></div>
+        <div class="caption">Data: OpenStreetMap; boundaries from custom GeoJSON.</div>
+      </div>
+    </section>
+
+    <!-- ===== Section 2: Dual Dashboard (Bar + Expenditure) ===== -->
+    <section>
+      <h2>International Visitors & Expenditure Overview (2025)</h2>
+      <p class="lead">
+        Explore the relationship between visitor activity across states/territories (left)
+        and how spending differs by purpose of travel (right).
+      </p>
+      <div class="content">
+        <!-- Left: Grouped Bar -->
+        <div class="half">
+          <div class="card">
+            <h3 style="margin-top:0;">Visitors by State</h3>
+            <div class="controls">
+              Show:
+              <select id="filter">
+                <option value="All">All</option>
+                <option value="Trips (thousand)">Trips (thousand)</option>
+                <option value="Nights (thousand)">Nights (thousand)</option>
+                <option value="Expenditure (million AUD)">Expenditure (million AUD)</option>
+              </select>
+            </div>
+            <div id="vis"></div>
+            <div id="annotation" style="font-size:14px;color:#666;margin-top:8px;"></div>
+            <div class="caption">Source: TRA — International Visitor Survey (2025).</div>
+          </div>
+        </div>
+
+        <!-- Right: Expenditure Breakdown -->
+        <div class="half">
+          <div class="card">
+            <h3 style="margin-top:0;">Expenditure Composition</h3>
+            <div class="controls">
+              Purpose:
+              <select id="breakdownFilter">
+                <option value="All">All</option>
+                <option value="Holiday">Holiday</option>
+                <option value="Visiting_Friends">Visiting friends & relatives</option>
+                <option value="Business">Business</option>
+                <option value="Education">Education</option>
+                <option value="Other">Other purpose</option>
+              </select>
+            </div>
+            <div id="vis-3"></div>
+            <div class="caption">Source: TRA — IVS 2025, Table 7. Units in million AUD.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Section 3: Bubble Chart (Top10 + checkbox filter; legends removed) ===== -->
+    <section>
+      <h2>International Markets (2025) — Trips × Spend × Nights</h2>
+      <p class="lead">
+        Select countries to compare. Bubble size shows total nights; position shows trips and spend.
+      </p>
+
+      <div class="card">
+        <!-- 勾选式过滤器（Top10 多选对比） -->
+        <div class="controls">
+          <strong>Compare countries:</strong>
+          <div id="countryChecks" class="checkboxes"></div>
+        </div>
+
+        <div id="bubble" aria-label="Bubble chart comparing countries by trips, spend and nights"></div>
+        <div class="caption">Source: TRA — IVS 2025. File: <code>ivs_country_estimates_clean.csv</code> (Top 10 by spend)</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Scripts ===== -->
+  <script>
+    // Date
+    document.getElementById('dateStamp').textContent =
+      new Date().toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
+
+    // Map
+    vegaEmbed("#map", "specs/map.vg.json", {actions:false}).catch(console.error);
+  </script>
+
+  <!-- Grouped Bar -->
+  <script>
+    const annotations = {
+      "All": "Compares trips, total nights, and expenditure across states.",
+      "Trips (thousand)": "Trips indicate how many times visitors entered each state/territory.",
+      "Nights (thousand)": "Nights represent duration of stays — leisure destinations have longer stays.",
+      "Expenditure (million AUD)": "Expenditure covers accommodation, food, and activities by visitors."
+    };
+
+    function drawChart(filter) {
+      const spec = {
+        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+        width: "container",
+        height: 300,
+        data: { url: "data/ivs_state_2025.csv" },
+        transform: [
+          { fold: ["Trips_000","Nights_000","Expenditure_MAUD"], as: ["Metric","Value"] },
+          { calculate: "datum.Metric=='Trips_000' ? 'Trips (thousand)' : datum.Metric=='Nights_000' ? 'Nights (thousand)' : 'Expenditure (million AUD)'", as: "MetricLabel" },
+          { filter: filter === "All" ? "true" : "datum.MetricLabel == '" + filter + "'" }
+        ],
+        mark: "bar",
+        encoding: {
+          x: { field: "State", type: "nominal", title: "State or Territory" },
+          xOffset: { field: "MetricLabel" },
+          y: { field: "Value", type: "quantitative", title: "Value", axis: { format: ",.0f" } },
+          color: { field: "MetricLabel", type: "nominal", title: "Metric" },
+          tooltip: [
+            { field: "State" },
+            { field: "MetricLabel", title: "Metric" },
+            { field: "Value", format: ",.0f" }
+          ]
+        },
+        config: { view: {stroke: null} }
+      };
+      vegaEmbed("#vis", spec, {actions:false});
+      document.getElementById("annotation").textContent = annotations[filter];
+    }
+    const select = document.getElementById("filter");
+    drawChart("All");
+    select.addEventListener("change", () => drawChart(select.value));
+  </script>
+
+  <!-- Expenditure Breakdown -->
+  <script>
+    function drawBreakdown(reason) {
+      const baseTransforms = [
+        { fold: ["Holiday","Visiting_Friends","Business","Education","Other"], as: ["Reason","Value"] },
+        { calculate: "toNumber(replace(datum.Value, /,/g, ''))", as: "ValueNum" }
+      ];
+      const transforms = reason && reason !== "All"
+        ? [...baseTransforms, { filter: `datum.Reason === "${reason}"` }]
+        : baseTransforms;
+
+      const spec = {
+        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+        width: "container",
+        height: 300,
+        data: { url: "data/ivs_expenditure_breakdown_2025.csv" },
+        transform: [
+          ...transforms,
+          { joinaggregate: [{ op: "sum", field: "ValueNum", as: "Total" }], groupby: ["Reason"] },
+          { calculate: "datum.ValueNum / datum.Total", as: "Share" }
+        ],
+        mark: "bar",
+        encoding: {
+          x: { field: "Reason", type: "nominal", title: "Purpose of travel" },
+          y: { field: "Share", type: "quantitative", stack: "normalize", axis: { format: ".0%", title: "Share of expenditure" } },
+          color: { field: "Expenditure", type: "nominal", title: "Expenditure Item", legend: { columns: 2 } },
+          tooltip: [
+            { field: "Reason" },
+            { field: "Expenditure" },
+            { field: "ValueNum", title: "Amount (m AUD)", format: ",.0f" },
+            { field: "Share", title: "Share", format: ".1%" }
+          ]
+        },
+        config: { view: { stroke: null } }
+      };
+      vegaEmbed("#vis-3", spec, { actions: false });
+    }
+    const breakdownSelect = document.getElementById("breakdownFilter");
+    drawBreakdown(breakdownSelect.value);
+    breakdownSelect.addEventListener("change", () => drawBreakdown(breakdownSelect.value));
+  </script>
+
+  <!-- Bubble Chart (Top10 + checkbox filter; no legends) -->
+  <script>
+    // Vega-Lite 规格：Top 10 by Spend，外部复选框过滤；隐藏 size/color 图例
+    const bubbleSpec = {
+      $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+      width: "container",
+      height: 360,
+      data: { url: "data/ivs_country_estimates_clean.csv" },
+      params: [{ name: "picked", value: [] }], // 外部通过 JS 设置
+      transform: [
+        { calculate: "datum['International_travel_estimates_by_country_of_residence(a)']", as: "Country" },
+        { calculate: "toNumber(replace(datum['Trips'], /,/g, ''))", as: "Trips" },
+        { calculate: "toNumber(replace(datum[\"Nights ('000)\"], /,/g, ''))", as: "Nights" },
+        { calculate: "toNumber(replace(datum['Spend in Australia ($M)'], /,/g, ''))", as: "Spend" },
+        { filter: "isValid(datum.Country) && isFinite(datum.Trips) && isFinite(datum.Nights) && isFinite(datum.Spend)" },
+        // —— Top 10 by Spend ——
+        { window: [{ op: 'rank', as: 'r' }], sort: [{ field: 'Spend', order: 'descending' }] },
+        { filter: "datum.r <= 10" },
+        // —— 外部复选框过滤：为空则显示全部 Top10；否则只显示选中项 ——
+        { filter: "!picked || picked.length==0 || indexof(picked, datum.Country) >= 0" }
+      ],
+      mark: { type: "circle", opacity: 0.9 },
+      encoding: {
+        x: { field: "Trips", type: "quantitative", title: "Trips (thousand)", axis: { grid: true } },
+        y: { field: "Spend", type: "quantitative", title: "Spend in Australia (million AUD)", axis: { grid: true }, scale: { nice: true } },
+        size: { field: "Nights", type: "quantitative", title: null, legend: null, scale: { range: [40, 1400] } },
+        color: { field: "Country", type: "nominal", legend: null },
+        tooltip: [
+          { field: "Country" },
+          { field: "Trips", title: "Trips (k)", format: ",.0f" },
+          { field: "Nights", title: "Nights (k)", format: ",.0f" },
+          { field: "Spend", title: "Spend (m AUD)", format: ",.0f" }
+        ]
+      },
+      config: { view: { stroke: null } },
+      title: { text: "Top 10 Markets (2025): Trips × Spend × Nights", anchor: "start" }
+    };
+
+    let bubbleView = null;
+
+    // 根据 Top10 数据构建复选框
+    function buildCheckboxes(countries) {
+      const box = document.getElementById('countryChecks');
+      box.innerHTML = '';
+      countries.forEach(c => {
+        const id = 'chk_' + c.replace(/\W+/g,'_');
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox'; input.value = c; input.id = id; input.checked = true;
+        label.setAttribute('for', id);
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(c));
+        box.appendChild(label);
+      });
+
+      const sync = () => {
+        const picked = Array.from(box.querySelectorAll('input[type=checkbox]'))
+          .filter(i => i.checked).map(i => i.value);
+        if (bubbleView) { bubbleView.signal('picked', picked).run(); }
+      };
+      box.addEventListener('change', sync);
+    }
+
+    // 嵌入并读取 Top10 国家（根据 Spend 排序后前10）
+    vegaEmbed("#bubble", bubbleSpec, { actions: false })
+      .then(res => {
+        bubbleView = res.view;
+        // 找到包含 Country 字段的数据集
+        const names = res.view._runtime.data ? Object.keys(res.view._runtime.data) : [];
+        let tableName = 'data_0';
+        for (const n of names) {
+          const arr = res.view.data(n);
+          if (Array.isArray(arr) && arr.length && 'Country' in arr[0]) { tableName = n; break; }
+        }
+        const rows = res.view.data(tableName) || [];
+        // rows 已是 Top10（上游 transform 已过滤），再按 Spend 降序保证顺序
+        const ordered = rows.slice().sort((a,b)=> b.Spend - a.Spend);
+        const topCountries = ordered.map(d=>d.Country);
+
+        buildCheckboxes(topCountries);
+        // 初始设为“全选 Top10”
+        bubbleView.signal('picked', topCountries).run();
+      })
+      .catch(console.error);
+  </script>
+</body>
+</html>

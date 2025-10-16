@@ -1,0 +1,63 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": "Distribution of Tourist Attractions in Australia",
+  "width": 900,
+  "height": 620,
+  "projection": { "type": "mercator", "center": [134, -28], "scale": 800 },
+
+  "params": [
+    {
+      "name": "typeFilter",
+      "value": "All",
+      "bind": {
+        "input": "select",
+        "options": ["All","viewpoint","attraction","museum","gallery","theme_park"],
+        "labels": ["All categories","Viewpoint","Attraction","Museum","Gallery","Theme Park"],
+        "name": "Attraction category: "
+      }
+    }
+  ],
+
+  "layer": [
+    {
+      "data": {
+        "url": "data/aus_states.json",
+        "format": { "type": "topojson", "feature": "ne_10m_admin_1_states_provinces" }
+      },
+      "transform": [ { "filter": "datum.properties.adm0_a3 == 'AUS'" } ],
+      "mark": { "type": "geoshape", "fill": "#f0f0f0", "stroke": "#777", "strokeWidth": 0.8 }
+    },
+    {
+      "data": { "url": "data/attractions.csv" },
+      "transform": [
+        { "filter": "typeFilter == 'All' || datum.tourism == typeFilter" },
+        {
+          "calculate": "isValid(datum.name) && datum.name != '' ? datum.name : 'Unnamed Attraction'",
+          "as": "display_name"
+        },
+        {
+          "calculate": "datum.tourism == 'theme_park' ? 'Theme Park' : datum.tourism == 'viewpoint' ? 'Viewpoint' : datum.tourism == 'attraction' ? 'Attraction' : datum.tourism == 'museum' ? 'Museum' : datum.tourism == 'gallery' ? 'Gallery' : datum.tourism",
+          "as": "tourism_label"
+        }
+      ],
+      "mark": { "type": "circle", "opacity": 0.55 },
+      "encoding": {
+        "longitude": { "field": "@lon", "type": "quantitative" },
+        "latitude": { "field": "@lat", "type": "quantitative" },
+        "size": { "value": 10 },
+        "color": {
+          "field": "tourism_label",
+          "type": "nominal",
+          "title": "Attraction Category",
+          "scale": { "domain": ["Viewpoint","Attraction","Museum","Gallery","Theme Park"] }
+        },
+        "tooltip": [
+          { "field": "display_name", "title": "Attraction Name" },
+          { "field": "tourism_label", "title": "Category" },
+          { "field": "@lat", "title": "Latitude" },
+          { "field": "@lon", "title": "Longitude" }
+        ]
+      }
+    }
+  ]
+}
