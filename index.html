@@ -1,5 +1,4 @@
 <!doctype html>
-<html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>Australian Tourism — Attractions & International Visitors (2025)</title>
@@ -66,7 +65,6 @@
 <body>
   <main class="wrap">
 
-    <!-- ===== Header ===== -->
     <header class="hero">
       <div class="kicker">Australian Tourism Insights Dashboard</div>
       <h1>Australian Tourism: Attractions & International Visitor Patterns</h1>
@@ -89,7 +87,7 @@
       </div>
     </section>
 
-    <!-- ===== Section 2: Dual Dashboard (Bar + Expenditure) ===== -->
+    <!-- ===== Section 2: Dual Dashboard ===== -->
     <section>
       <h2>International Visitors & Expenditure Overview (2025)</h2>
       <p class="lead">
@@ -138,7 +136,7 @@
       </div>
     </section>
 
-    <!-- ===== Section 3: Bubble Chart (Top10 + checkbox filter; legends removed) ===== -->
+    <!-- ===== Section 3-->
     <section>
       <h2>International Markets (2025) — Trips × Spend × Nights</h2>
       <p class="lead">
@@ -146,7 +144,6 @@
       </p>
 
       <div class="card">
-        <!-- 勾选式过滤器（Top10 多选对比） -->
         <div class="controls">
           <strong>Compare countries:</strong>
           <div id="countryChecks" class="checkboxes"></div>
@@ -158,7 +155,6 @@
     </section>
   </main>
 
-  <!-- ===== Scripts ===== -->
   <script>
     // Date
     document.getElementById('dateStamp').textContent =
@@ -168,7 +164,6 @@
     vegaEmbed("#map", "specs/map.vg.json", {actions:false}).catch(console.error);
   </script>
 
-  <!-- Grouped Bar -->
   <script>
     const annotations = {
       "All": "Compares trips, total nights, and expenditure across states.",
@@ -252,25 +247,21 @@
     breakdownSelect.addEventListener("change", () => drawBreakdown(breakdownSelect.value));
   </script>
 
-  <!-- Bubble Chart (Top10 + checkbox filter; no legends) -->
   <script>
-    // Vega-Lite 规格：Top 10 by Spend，外部复选框过滤；隐藏 size/color 图例
     const bubbleSpec = {
       $schema: "https://vega.github.io/schema/vega-lite/v5.json",
       width: "container",
       height: 360,
       data: { url: "data/ivs_country_estimates_clean.csv" },
-      params: [{ name: "picked", value: [] }], // 外部通过 JS 设置
+      params: [{ name: "picked", value: [] }],
       transform: [
         { calculate: "datum['International_travel_estimates_by_country_of_residence(a)']", as: "Country" },
         { calculate: "toNumber(replace(datum['Trips'], /,/g, ''))", as: "Trips" },
         { calculate: "toNumber(replace(datum[\"Nights ('000)\"], /,/g, ''))", as: "Nights" },
         { calculate: "toNumber(replace(datum['Spend in Australia ($M)'], /,/g, ''))", as: "Spend" },
         { filter: "isValid(datum.Country) && isFinite(datum.Trips) && isFinite(datum.Nights) && isFinite(datum.Spend)" },
-        // —— Top 10 by Spend ——
         { window: [{ op: 'rank', as: 'r' }], sort: [{ field: 'Spend', order: 'descending' }] },
         { filter: "datum.r <= 10" },
-        // —— 外部复选框过滤：为空则显示全部 Top10；否则只显示选中项 ——
         { filter: "!picked || picked.length==0 || indexof(picked, datum.Country) >= 0" }
       ],
       mark: { type: "circle", opacity: 0.9 },
@@ -292,7 +283,6 @@
 
     let bubbleView = null;
 
-    // 根据 Top10 数据构建复选框
     function buildCheckboxes(countries) {
       const box = document.getElementById('countryChecks');
       box.innerHTML = '';
@@ -315,11 +305,10 @@
       box.addEventListener('change', sync);
     }
 
-    // 嵌入并读取 Top10 国家（根据 Spend 排序后前10）
     vegaEmbed("#bubble", bubbleSpec, { actions: false })
       .then(res => {
         bubbleView = res.view;
-        // 找到包含 Country 字段的数据集
+
         const names = res.view._runtime.data ? Object.keys(res.view._runtime.data) : [];
         let tableName = 'data_0';
         for (const n of names) {
@@ -327,12 +316,10 @@
           if (Array.isArray(arr) && arr.length && 'Country' in arr[0]) { tableName = n; break; }
         }
         const rows = res.view.data(tableName) || [];
-        // rows 已是 Top10（上游 transform 已过滤），再按 Spend 降序保证顺序
         const ordered = rows.slice().sort((a,b)=> b.Spend - a.Spend);
         const topCountries = ordered.map(d=>d.Country);
 
         buildCheckboxes(topCountries);
-        // 初始设为“全选 Top10”
         bubbleView.signal('picked', topCountries).run();
       })
       .catch(console.error);
